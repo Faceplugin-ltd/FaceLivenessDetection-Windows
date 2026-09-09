@@ -168,7 +168,7 @@ curl -s -X POST http://127.0.0.1:8084/api/activate -H "Content-Type: text/plain"
 
 After activation, `GET /api/licenseStatus` reports what the key unlocks. The Gradio demo shows the same summary as **License:** at the top of the page.
 
-This App exposes **liveness** APIs only. Typical labels (license `license_level` 0 / 1 / 2):
+This App exposes **liveness** APIs only. Typical labels:
 
 - **Liveness only** / **Recognition + Liveness** — `/api/liveness`
 - **Recognition only** — liveness stays unavailable on this App
