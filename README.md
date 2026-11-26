@@ -46,7 +46,11 @@ All processing stays on your machine. **No** biometric data is sent to FacePlugi
 
 Score **≥ 0.5** → `result: "Real"`, `pass: true`. Score **< 0.5** → `result: "Spoof"`, `pass: false`.
 
-`POST /api/check_liveness` is an alias of `/api/liveness`. Routes are `/api/*`; there is no version segment.
+`POST /api/check_liveness` is an alias of `/api/liveness`. Routes are `/api/*`; there is no version segment, and every `/api/*` path answers `OPTIONS` for browser preflight.
+
+The call takes one image and nothing else — there is **no model or algorithm to choose**. The runtime fuses every RGB estimator it holds into the single score you get back, and `pass` is `score >= 0.5`, fixed in native code and not settable over HTTP.
+
+Liveness here is **passive only**. There is no active (challenge–response) liveness over HTTP; for that, use the mobile SDKs in [Product List](#product-list).
 
 ### Benchmarks
 
@@ -65,19 +69,28 @@ Figures: [doc.faceplugin.com](https://doc.faceplugin.com/products/face-recogniti
 
 ### Product List
 
-| Product | Repository |
-| ------- | ---------- |
-| **Face Liveness Detection — Windows** | **[FaceLivenessDetection-Windows](https://github.com/Faceplugin-ltd/FaceLivenessDetection-Windows)** **(this repo)** |
-| Face Liveness Detection — Docker | [Docker Hub](https://hub.docker.com/r/faceplugin/face-liveness) · [FaceLivenessDetection-Docker](https://github.com/Faceplugin-ltd/FaceLivenessDetection-Docker) |
-| Face Recognition — Windows | [FaceRecognition-Windows](https://github.com/Faceplugin-ltd/FaceRecognition-Windows) |
-| Face Recognition — Docker | [Docker Hub](https://hub.docker.com/r/faceplugin/face-recognition) · [FaceRecognition-Docker](https://github.com/Faceplugin-ltd/FaceRecognition-Docker) |
+The same Face Liveness product ships on nine platforms. The mobile SDKs run on-device and offer **passive and active** liveness; the two server products are **passive only**.
+
+| Platform | Repository |
+| -------- | ---------- |
+| Android | [FaceLivenessDetection-Android](https://github.com/Faceplugin-ltd/FaceLivenessDetection-Android) |
+| iOS | [FaceLivenessDetection-iOS](https://github.com/Faceplugin-ltd/FaceLivenessDetection-iOS) |
+| Flutter | [FaceLivenessDetection-Flutter](https://github.com/Faceplugin-ltd/FaceLivenessDetection-Flutter) |
+| React Native | [FaceLivenessDetection-ReactNative](https://github.com/Faceplugin-ltd/FaceLivenessDetection-ReactNative) |
+| Ionic Capacitor | [FaceLivenessDetection-Ionic-Capacitor](https://github.com/Faceplugin-ltd/FaceLivenessDetection-Ionic-Capacitor) |
+| Ionic Cordova | [FaceLivenessDetection-Ionic-Cordova](https://github.com/Faceplugin-ltd/FaceLivenessDetection-Ionic-Cordova) |
+| .NET MAUI | [FaceLivenessDetection-DotNet-MAUI](https://github.com/Faceplugin-ltd/FaceLivenessDetection-DotNet-MAUI) |
+| **Windows** (server) | **[FaceLivenessDetection-Windows](https://github.com/Faceplugin-ltd/FaceLivenessDetection-Windows)** **(this repo)** |
+| Linux / Docker (server) | [Docker Hub](https://hub.docker.com/r/faceplugin/face-liveness) · [FaceLivenessDetection-Docker](https://github.com/Faceplugin-ltd/FaceLivenessDetection-Docker) |
 
 ### Related products
 
-On-device liveness apps for mobile:
+Need **active liveness** — blink, smile, turn your head? That is an on-device feature; start with the mobile SDKs above, for example [FaceLivenessDetection-Android](https://github.com/Faceplugin-ltd/FaceLivenessDetection-Android) or [FaceLivenessDetection-iOS](https://github.com/Faceplugin-ltd/FaceLivenessDetection-iOS).
 
-- **Android** — [FaceLivenessDetection-Android](https://github.com/Faceplugin-ltd/FaceLivenessDetection-Android)
-- **iOS** — [FaceLivenessDetection-iOS](https://github.com/Faceplugin-ltd/FaceLivenessDetection-iOS)
+Face recognition, on-premise servers:
+
+- **Windows** — [FaceRecognition-Windows](https://github.com/Faceplugin-ltd/FaceRecognition-Windows)
+- **Docker** — [Docker Hub](https://hub.docker.com/r/faceplugin/face-recognition) · [FaceRecognition-Docker](https://github.com/Faceplugin-ltd/FaceRecognition-Docker)
 
 On-device face recognition + liveness apps for mobile:
 
@@ -164,6 +177,8 @@ The API starts even if activation fails. Copy the **machine code** (`FPMC1.…`)
 
 Licenses are **offline** and bound to your machine. Offline cryptography is pre-packaged within the SDK — no third-party licensing libraries or external OpenSSL installations are required.
 
+The repository already contains a `license.txt` — you do not create it. Unless the key in it was issued for *your* machine code, activation fails on the first start, the server prints your machine code and asks for your key. Overwrite the file with the key we send you.
+
 ### How to get a license
 
 1. **Start the server** ([above](#start-the-api)). A license is not required for the first start.
@@ -174,7 +189,7 @@ Licenses are **offline** and bound to your machine. Offline cryptography is pre-
 ```bat
 :: After run.bat, paste the license key at the terminal prompt. You can try 3 times.
 
-:: Or paste the license key into .\license.txt (overwrite the file), then:
+:: Or overwrite .\license.txt — the repo already ships one, and your key replaces it — then:
 
 curl -s -X POST http://127.0.0.1:8093/api/activate -H "Content-Type: text/plain" --data-binary @license.txt
 
@@ -205,12 +220,15 @@ curl -s http://127.0.0.1:8093/api/health
 
 ```bat
 curl -s -X POST http://127.0.0.1:8093/api/liveness -H "Content-Type: application/json" -d "{\"image\":\"<base64-jpeg>\"}"
+
+:: or multipart, with the file in the `image` field (`file` is accepted too)
+curl -s -X POST http://127.0.0.1:8093/api/liveness -F "image=@face.jpg"
 ```
 
-Success `data`:
+The native JSON is passed through verbatim:
 
 ```json
-{ "score": 0.72, "result": "Real", "pass": true }
+{ "success": true, "code": 0, "message": "OK", "data": { "score": 0.72, "result": "Real", "pass": true } }
 ```
 
 Common failures (`success: false`, `data: null`):
