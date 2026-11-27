@@ -4,7 +4,7 @@ __pycache__/
 *.pyo
 .DS_Store
 
-# Runtime (download from Google Drive into lib/cpu)
+# Runtime (download from GitHub Releases into lib/cpu)
 lib/cpu/*
 !lib/cpu/.gitkeep
 lib/gpu/*
@@ -37,3 +37,12 @@ deploy.py
 .idea/
 .vscode/
 *.iml
+
+# Extra caches
+*.log
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+dist/
+build/
